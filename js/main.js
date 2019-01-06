@@ -1,6 +1,5 @@
 define( [ 'Game' ], function( Game ) {
 
-
 	function hasAudio() {
 		var audio = document.createElement('audio');
 
@@ -40,18 +39,9 @@ define( [ 'Game' ], function( Game ) {
 			result[ name ].addEventListener( 'canplay', canplay, false );
 			result[ name ].src = "audio/" + name + ".m4a";
 		}
-
 	}
 
 	var SOUNDS = [ 'Christine', 'Edd', 'Kathleen1', 'Kathleen2', 'HitWall', 'Lose' ];
-
-	function run( sounds ) {
-		// game loop goes here, during which we can...
-		//sounds.zap.play();
-		//audio.Christine.play( );
-
-
-	}
 
 	function startGame( audio ) {
 		console.log( 'loaded' );
@@ -60,9 +50,5 @@ define( [ 'Game' ], function( Game ) {
 	}
 
 	loadSounds( SOUNDS, startGame );
-
-
- 	//var Game = new Game( 1000, 400 );
-
 });
 

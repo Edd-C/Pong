@@ -1,4 +1,4 @@
-define( [ 'vendor/jquery' ], function( ) {
+define( [ 'utils/utils.state', 'vendor/jquery' ], function( state ) {
 	'use strict';
 
 	var Player = class Player {

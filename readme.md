@@ -11,6 +11,8 @@ I would still like to implement:
 * A base vector class.
 * An audio class.
 * Simple game menu capability.
+* Separate collision handling
+* Add dev/prooduction logging method.
 
 ## License
 

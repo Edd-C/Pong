@@ -10,19 +10,7 @@
 
 	<body>
 		<div id="container">
-			<pre>
-					 ^
-					 |
-					 |
-					90
-
-			    <-------180     0 ------>
-
-					270
-					 |
-					 |
-					 v
-			</pre>
+			<div id="controls"></div>
 		</div>
 	</body>
 </html>

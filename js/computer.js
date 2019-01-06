@@ -1,4 +1,4 @@
-define( [ 'vendor/jquery' ], function( ) {
+define( [ 'utils/utils.state'], function( state ) {
 	'use strict';
 
 	var Computer = class Computer {

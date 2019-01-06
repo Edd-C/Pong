@@ -1,4 +1,4 @@
-define( [ 'vendor/jquery' ], function( ) {
+define( [ 'utils/utils.state'], function( state ) {
 	'use strict';
 
 	var Ball = class Ball {
@@ -24,7 +24,31 @@ define( [ 'vendor/jquery' ], function( ) {
 
 			this._prev_x;
 			this._prev_y;
+
+			this.active_states = [ ];
+
+			state.setState( 'play', this );
 		}
+
+
+		/**************************************************
+			State methods
+		**************************************************/
+
+		play_state( ) {
+			var vel = this.getVelocity( this._angle );
+
+			this._prev_x = this._x_pos;
+			this._prev_y = this._y_pos;
+			this.accelerate( );
+
+			this._x_pos += vel.x;
+			this._y_pos -= vel.y;
+		}
+
+		/**************************************************
+			State helper methods
+		**************************************************/
 
 		reset ( ) {
 			// movement
@@ -38,6 +62,11 @@ define( [ 'vendor/jquery' ], function( ) {
 			this._x_pos = this._context_width / 2;
 			this._y_pos = this._context_height / 2;
 		}
+
+
+		/**************************************************
+			Movement methods
+		**************************************************/
 
 		switchDirection( ) {
 			this._direction *= -1;
@@ -73,19 +102,19 @@ define( [ 'vendor/jquery' ], function( ) {
 			}
 		}
 
-		// Add lag fudge factor
+
+		/**************************************************
+			Game loop methods
+		**************************************************/
+
 		update( ) {
-			var vel = this.getVelocity( this._angle );
-
-			this._prev_x = this._x_pos;
-			this._prev_y = this._y_pos;
-			this.accelerate( );
-
-			this._x_pos += vel.x;
-			this._y_pos -= vel.y;
+			// If there is a state on the stack
+			if ( this.active_states.length >= 1 ) {
+				// Run the method assocaited with the active_state on the top of the stack.
+				this[ this.active_states[ this.active_states.length - 1 ] + '_state' ]( );
+			}
 		}
 
-		// Add lag fudge factor
 		render ( lag ) {
 			var vel = this.getVelocity( this._angle );
 

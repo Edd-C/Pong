@@ -1,4 +1,4 @@
-define( [ 'utils/utils.canvas', 'utils/utils.time', 'player', 'computer', 'ball', 'vendor/fpsmeter' ], function( canvasUtils, timeUtils, Player, Computer, Ball ) {
+define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player', 'computer', 'ball', 'vendor/fpsmeter' ], function( canvasUtils, timeUtils, state, Player, Computer, Ball ) {
 	'use strict';
 
 	var Game = class Game {
@@ -6,16 +6,13 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'player', 'computer', 'ball'
 		constructor( w, h, audio ) {
 			var MS_PER_UPDATE = 13;
 
+			// Viewport height and width
 			this._w = w;
 			this._h = h;
 
-			//this.config = config || { };
-
-			// Instantiate an empty state object
-			this.state = { };
-			this._state = 'play';
-
+			// Container to append the canvas to
 			this.container = document.getElementById( 'container' );
+			this.controls_container = document.getElementById( 'controls' );
 
 			// Generate a canvas and store it as our viewport
 			this.viewport = canvasUtils.generateCanvas( w, h );
@@ -31,7 +28,6 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'player', 'computer', 'ball'
 
 			// Setup entites
 			this._ball = new Ball( this.context );
-
 			this._paddle_1 = new Player( this.context );
 			this._paddle_2 = new Computer( this.context, this._ball );
 
@@ -41,47 +37,114 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'player', 'computer', 'ball'
 			// Audio stuff
 			this._audio = audio;
 
+			// Init states
+			this.active_states = [ ];
+			this.transitions = [ ];
+
+			state.setState( 'play', this, false, false );
+
+			// Init score
 			this._score = {
 				p1: 0,
 				p2: 0
 			}
 
-			//this._countdown_initial_time;
+			this.create_controls( );
 
 			this.run( MS_PER_UPDATE);
 		}
 
-		countdown( elapsed ) {
-			var self = this;
-			this._state = 'pause';
+		/**************************************************
+			Controls
+		**************************************************/
 
-			// 3
-			setTimeout( function () { ( function( ) {
+		create_controls( ) {
+			var pause_btn, play_btn, pause_text, play_text,
+				self = this;
 
-				// 2
-				setTimeout( function () { ( function( ) {
+			// Create play button
+			play_btn = document.createElement( "button" );
+			play_btn.onclick = function( ) {
+				state.setState( 'play', self );
+			}
+			play_text = document.createTextNode( "Play" );
+			play_btn.appendChild( play_text );
 
-					// 1
-					setTimeout( function ( ) { ( function( ) {
+			this.controls_container.appendChild( play_btn );
 
-						// go
-						setTimeout( function ( ) { ( function( ) {
-							self._state = 'play';
-							console.log('go');
-						})(); }, 1000);
+			// Create pause button
+			pause_btn = document.createElement( "button" );
+			pause_btn.onclick = function( ) {
+				state.setState( 'paused', self );
+			}
+			pause_text = document.createTextNode( "Pause" );
+			pause_btn.appendChild( pause_text );
 
-						console.log('1');
-					})(); }, 1000);
-
-					console.log('2');
-				})(); }, 1000);
-
-				console.log('3');
-			})(); }, 1000);
-
-
-
+			this.controls_container.appendChild( pause_btn );
 		}
+
+		/**************************************************
+			State methods
+		**************************************************/
+
+		play_state( ) {
+			//console.log( 'game play' );
+			var i, count;
+
+			//console.log( this._score );
+
+			for ( i = 0, count = this._entities.length; i < count; i++ ) {
+				this._entities[ i ].update( );
+			}
+
+			this.checkCollision( );
+		}
+
+		paused_state( ) {
+			// Need to add the ability to do transitions
+			//state.addState( 'paused', this._entities[ 2 ] );
+
+			/*for ( i = 0, count = this._entities.length; i < count; i++ ) {
+				this._entities[ i ].active_state.push( 'pause' );
+			}*/
+		}
+
+		/**************************************************
+			Transition methods
+		**************************************************/
+
+		paused_enter( ) {
+			console.log( 'Trans: paused_enter');
+		}
+
+		paused_leave( ) {
+			console.log( 'Trans: paused_leave');
+		}
+
+		play_enter( ) {
+			console.log( 'Trans: play_enter');
+		}
+
+		play_leave( ) {
+			console.log( 'Trans: play_leave');
+		}
+
+
+		/**************************************************
+			State helper methods
+		**************************************************/
+
+		reset( ) {
+			var i, count;
+			for ( i = 0, count = this._entities.length; i < count; i++ ) {
+				this._entities[ i ].reset( );
+			}
+		}
+
+
+		/**************************************************
+			Collision methods
+		**************************************************/
 
 		intersects ( a, b, c, d, p, q, r, s ) {
 			var det, gamma, lambda;
@@ -136,22 +199,22 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'player', 'computer', 'ball'
 			// Hit right
 			else if ( b2_x >= this._context_width ) {
 				this._score.p1 += 1;
-				this._state = 'scored';
-				this._audio.Lose.play( ).catch(function( ) {
-					console.log( 'Lose Error');
-				});
-
-				//this.reset( );
-			}
-			// Hit left
-			else if (  b2_x <= 0 ) {
-				this._score.p2 += 1;
-				this._state = 'scored';
 				this._audio.Lose.play( ).catch(function( ) {
 					console.log( 'Lose Error');
 				});
 
 				this.reset( );
+			}
+			// Hit left
+			else if (  b2_x <= 0 ) {
+				this._score.p2 += 1;
+				this._audio.Lose.play( ).catch(function( ) {
+					console.log( 'Lose Error');
+				});
+
+				this.reset( );
+
+				//this.setState( 'pause' );
 			}
 
 			if ( p1_intersect === true && this._ball._direction === 1  ) {
@@ -171,6 +234,11 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'player', 'computer', 'ball'
 			}
 		}
 
+
+		/**************************************************
+			Audio methods
+		**************************************************/
+
 		playPaddleHitAudio ( ) {
 			this._audio[ this._audio_clip_pointer ].play();
 
@@ -182,80 +250,10 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'player', 'computer', 'ball'
 			}
 		}
 
-		run ( MS_PER_UPDATE ) {
-			this._audio.Christine.play( ).catch(function( ) {
-				console.log( 'Christine Error');
-			});
 
-			var current, elapsed, loop,
-				previous = timeUtils.timestamp( ), // 113
-				lag = 0.0,
-				fpsmeter = new FPSMeter({ decimals: 0, graph: true, theme: 'dark', left: '90%', right: '95%' }),
-				self = this;
-
-
-			loop = function ( ) {
-
-				fpsmeter.tickStart( );
-
-					if ( self._state === 'play' ) {
-						current = timeUtils.timestamp( );
-						elapsed = current - previous;
-						previous = current;
-						lag += elapsed;
-
-
-						while ( lag >= MS_PER_UPDATE ) {
-							self.update( );
-							lag -= MS_PER_UPDATE;
-						}
-
-						self.render( lag / MS_PER_UPDATE );
-					}
-					else if ( self._state === 'scored' ) {
-						console.log( 'scored' );
-					}
-
-
-				fpsmeter.tick();
-
-				requestAnimationFrame( loop );
-			}
-
-			requestAnimationFrame( loop );
-
-
-		}
-
-		update( ) {
-			var i, count;
-
-			for ( i = 0, count = this._entities.length; i < count; i++ ) {
-				this._entities[ i ].update( );
-			}
-
-			this.checkCollision( );
-		}
-
-		render( lag ) {
-			var i, count;
-
-			this.context.clearRect( 0, 0, this._w, this._h );
-
-			this.render_score( );
-
-			for ( i = 0, count = this._entities.length; i < count; i++ ) {
-				this._entities[ i ].render( lag );
-			}
-		}
-
-		reset( ) {
-			var i, count;
-			for ( i = 0, count = this._entities.length; i < count; i++ ) {
-				this._entities[ i ].reset( );
-			}
-			this._state = 'play';
-		}
+		/**************************************************
+			Score methods
+		**************************************************/
 
 		render_score ( ) {
 			// Center line
@@ -278,6 +276,76 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'player', 'computer', 'ball'
 
 		}
 
+
+		/**************************************************
+			Loop, update, render core methods
+		**************************************************/
+
+		run ( MS_PER_UPDATE ) {
+			this._audio.Christine.play( ).catch(function( ) {
+				console.log( 'Christine Error');
+			});
+
+			var current, elapsed, loop,
+				previous = timeUtils.timestamp( ), // 113
+				lag = 0.0,
+				fpsmeter = new FPSMeter({ decimals: 0, graph: true, theme: 'dark', left: '90%', right: '95%' }),
+				self = this;
+
+			loop = function ( ) {
+				fpsmeter.tickStart( );
+
+					//if ( self._state === 'play' ) {
+						current = timeUtils.timestamp( );
+						elapsed = current - previous;
+						previous = current;
+						lag += elapsed;
+
+
+						while ( lag >= MS_PER_UPDATE ) {
+							self.update( );
+							lag -= MS_PER_UPDATE;
+						}
+
+						self.render( lag / MS_PER_UPDATE );
+					/*}
+					else if ( self._state === 'scored' ) {
+						console.log( 'scored' );
+					}*/
+
+				fpsmeter.tick();
+
+				requestAnimationFrame( loop );
+			}
+
+			requestAnimationFrame( loop );
+		}
+
+		update( ) {
+			if ( this.active_states.length >= 1 ) {
+				// Run the method assocaited with the active_state on the top of the stack.
+				this[ this.active_states[ this.active_states.length - 1 ] + '_state' ]( );
+			}
+
+			if ( this.transitions.length >= 1 ) {
+				this[ this.transitions[ this.transitions.length - 1 ] ]( );
+				this.transitions.pop();
+			}
+		}
+
+		render( lag ) {
+			var i, count;
+
+			lag = ( this.active_states === 'play' ) ? lag : 0;
+
+			this.context.clearRect( 0, 0, this._w, this._h );
+
+			this.render_score( );
+
+			for ( i = 0, count = this._entities.length; i < count; i++ ) {
+				this._entities[ i ].render( lag );
+			}
+		}
 	} // end Game
 
 	return Game;
