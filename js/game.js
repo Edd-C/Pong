@@ -38,10 +38,11 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 			this._audio = audio;
 
 			// Init states
-			this.active_states = [ ];
+			this._states = [ ];
+			this._active_state;
 			this.transitions = [ ];
 
-			state.setState( 'play', this, false, false );
+			state.set_state( 'play', this, false, false );
 
 			// Init score
 			this._score = {
@@ -65,7 +66,7 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 			// Create play button
 			play_btn = document.createElement( "button" );
 			play_btn.onclick = function( ) {
-				state.setState( 'play', self );
+				state.set_state( 'play', self );
 			}
 			play_text = document.createTextNode( "Play" );
 			play_btn.appendChild( play_text );
@@ -75,7 +76,7 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 			// Create pause button
 			pause_btn = document.createElement( "button" );
 			pause_btn.onclick = function( ) {
-				state.setState( 'paused', self );
+				state.set_state( 'paused', self );
 			}
 			pause_text = document.createTextNode( "Pause" );
 			pause_btn.appendChild( pause_text );
@@ -191,7 +192,7 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 
 			// Hit bottom or top
 			if ( b2_y >= this._context_height || b2_y <= 0 ) {
-				this._ball.reflectionAngle( 360 );
+				this._ball.reflection_angle( 360 );
 				this._audio.HitWall.play( ).catch( function( e ) {
 					console.log( 'HitWall Error');
 				});
@@ -214,20 +215,20 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 
 				this.reset( );
 
-				//this.setState( 'pause' );
+				//this.set_state( 'pause' );
 			}
 
 			if ( p1_intersect === true && this._ball._direction === 1  ) {
-				this._ball.reflectionAngle( 180 );
-				this._ball.switchDirection( );
+				this._ball.reflection_angle( 180 );
+				this._ball.switch_direction( );
 				this._audio.Edd.play( ).catch(function( ) {
 					console.log( 'Edd Error');
 				});
 			}
 
 			if ( p2_intersect === true && this._ball._direction === -1  ) {
-				this._ball.reflectionAngle( 180 );
-				this._ball.switchDirection( );
+				this._ball.reflection_angle( 180 );
+				this._ball.switch_direction( );
 				this._audio.Kathleen1.play( ).catch(function( ) {
 					console.log( 'Kathleen1 Error');
 				});
@@ -322,9 +323,9 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 		}
 
 		update( ) {
-			if ( this.active_states.length >= 1 ) {
+			if ( this._states.length >= 1 ) {
 				// Run the method assocaited with the active_state on the top of the stack.
-				this[ this.active_states[ this.active_states.length - 1 ] + '_state' ]( );
+				this[ this._states[ this._states.length - 1 ] + '_state' ]( );
 			}
 
 			if ( this.transitions.length >= 1 ) {
@@ -336,7 +337,10 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 		render( lag ) {
 			var i, count;
 
-			lag = ( this.active_states === 'play' ) ? lag : 0;
+			// This flag is out of date and needs updating.
+			//lag = ( this._states === 'play' ) ? lag : 0;
+
+			//console.log( lag );
 
 			this.context.clearRect( 0, 0, this._w, this._h );
 

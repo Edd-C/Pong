@@ -26,7 +26,7 @@ define( [ 'utils/utils.state'], function( state ) {
 			this._velocity = 9;
 		}
 
-		calcCenter( ) {
+		calc_center( ) {
 			this._center_pos = this._y_pos + ( this._paddle_height / 2 );
 		}
 

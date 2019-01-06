@@ -19,7 +19,7 @@ define( [ 'utils/utils.state', 'vendor/jquery' ], function( state ) {
 
 			this._movement_keys = { };
 
-			this.bindListeners( );
+			this.bind_listeners( );
 		}
 
 		reset( ) {
@@ -28,7 +28,7 @@ define( [ 'utils/utils.state', 'vendor/jquery' ], function( state ) {
 			this._speed = 10;
 		}
 
-		bindListeners( ) {
+		bind_listeners( ) {
 			var self = this;
 
 			// Listen for paddle controls

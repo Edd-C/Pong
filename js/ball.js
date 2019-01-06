@@ -10,7 +10,7 @@ define( [ 'utils/utils.state'], function( state ) {
 
 			// movement
 			this._speed = 9;
-			this._acceleration = 0.003;
+			this._acceleration = 0.002;
 
 			this._x_vel;
 			this._y_vel;
@@ -25,9 +25,10 @@ define( [ 'utils/utils.state'], function( state ) {
 			this._prev_x;
 			this._prev_y;
 
-			this.active_states = [ ];
+			this._states = [ ];
+			this._active_state;
 
-			state.setState( 'play', this );
+			state.set_state( 'play', this );
 		}
 
 
@@ -36,7 +37,7 @@ define( [ 'utils/utils.state'], function( state ) {
 		**************************************************/
 
 		play_state( ) {
-			var vel = this.getVelocity( this._angle );
+			var vel = this.get_velocity( this._angle );
 
 			this._prev_x = this._x_pos;
 			this._prev_y = this._y_pos;
@@ -68,12 +69,12 @@ define( [ 'utils/utils.state'], function( state ) {
 			Movement methods
 		**************************************************/
 
-		switchDirection( ) {
+		switch_direction( ) {
 			this._direction *= -1;
 		}
 
-		getVelocity( angle ) {
-			var angle = this.toDegrees( angle ),
+		get_velocity( angle ) {
+			var angle = this.to_degrees( angle ),
 				vel = {
 					x: null,
 					y: null
@@ -85,11 +86,11 @@ define( [ 'utils/utils.state'], function( state ) {
 			return vel;
 		}
 
-		toDegrees ( angle ) {
+		to_degrees ( angle ) {
 			return angle * ( Math.PI / 180 );
 		}
 
-		reflectionAngle ( i ) {
+		reflection_angle ( i ) {
 			this._angle = i - this._angle;
 		}
 
@@ -109,14 +110,14 @@ define( [ 'utils/utils.state'], function( state ) {
 
 		update( ) {
 			// If there is a state on the stack
-			if ( this.active_states.length >= 1 ) {
+			if ( this._states.length >= 1 ) {
 				// Run the method assocaited with the active_state on the top of the stack.
-				this[ this.active_states[ this.active_states.length - 1 ] + '_state' ]( );
+				this[ this._states[ this._states.length - 1 ] + '_state' ]( );
 			}
 		}
 
 		render ( lag ) {
-			var vel = this.getVelocity( this._angle );
+			var vel = this.get_velocity( this._angle );
 
 			this._context.beginPath();
 			this._context.arc( this._x_pos + ( vel.x * lag ), this._y_pos - ( vel.y * lag ), 10, 0, 2 * Math.PI );
