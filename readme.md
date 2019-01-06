@@ -2,16 +2,23 @@
 
 A simple pong game that is a work in progress. My intention was to write a minimally viable pure HTML5/Javascript game engine to learn about game programming concepts and design patterns.
 
-I would still like to implement:
+## Features
 
-* Stack-Based Finite State Machine.
+Implemented:
+
+* Fixed update, variable render game loop
+* Stack-based Finite state machine with leave/enter transition management
+* Simple asset pre-loading
+
+Not yet implemented:
+
 * Caching for the Render step.
 * A class for user input. Mouse and keyboard.
 * A base entity class.
 * A base vector class.
 * An audio class.
 * Simple game menu capability.
-* Separate collision handling
+* Separate collision handling.
 * Add dev/prooduction logging method.
 
 ## License

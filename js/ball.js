@@ -4,6 +4,8 @@ define( [ 'utils/utils.state'], function( state ) {
 	var Ball = class Ball {
 
 		constructor( context ) {
+			var self = this;
+
 			this._context = context;
 			this._context_height = parseInt( this._context.canvas.style.height );
 			this._context_width = parseInt( this._context.canvas.style.width );
@@ -26,9 +28,17 @@ define( [ 'utils/utils.state'], function( state ) {
 			this._prev_y;
 
 			this._states = [ ];
-			this._active_state;
 
 			state.set_state( 'play', this );
+
+			this.active_state = {
+				name: function( ) {
+					return state.get_active_state( self );
+				},
+				method_name: function( ) {
+					return state.get_active_state( self ) + '_state';
+				}
+			};
 		}
 
 
@@ -45,6 +55,10 @@ define( [ 'utils/utils.state'], function( state ) {
 
 			this._x_pos += vel.x;
 			this._y_pos -= vel.y;
+		}
+
+		paused_state( ) {
+
 		}
 
 		/**************************************************
@@ -112,18 +126,18 @@ define( [ 'utils/utils.state'], function( state ) {
 			// If there is a state on the stack
 			if ( this._states.length >= 1 ) {
 				// Run the method assocaited with the active_state on the top of the stack.
-				this[ this._states[ this._states.length - 1 ] + '_state' ]( );
+				this[ this.active_state.method_name( ) ]( );
 			}
 		}
 
 		render ( lag ) {
 			var vel = this.get_velocity( this._angle );
 
-			this._context.beginPath();
+			this._context.beginPath( );
 			this._context.arc( this._x_pos + ( vel.x * lag ), this._y_pos - ( vel.y * lag ), 10, 0, 2 * Math.PI );
 			this._context.stroke
 			this._context.fillStyle = "black";
-			this._context.fill();
+			this._context.fill( );
 		}
 	} // end Player
 

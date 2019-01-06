@@ -4,7 +4,8 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 	var Game = class Game {
 
 		constructor( w, h, audio ) {
-			var MS_PER_UPDATE = 13;
+			var MS_PER_UPDATE = 13,
+				self = this;
 
 			// Viewport height and width
 			this._w = w;
@@ -32,17 +33,27 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 			this._paddle_2 = new Computer( this.context, this._ball );
 
 			this._entities = [ ];
-			this._entities.push( this._paddle_1, this._paddle_2, this._ball );
+			this._entities.push( this._ball, this._paddle_1, this._paddle_2 );
 
 			// Audio stuff
 			this._audio = audio;
 
+
+			this._control_keys = { };
+
 			// Init states
 			this._states = [ ];
-			this._active_state;
-			this.transitions = [ ];
 
 			state.set_state( 'play', this, false, false );
+
+			this.active_state = {
+				name: function( ) {
+					return state.get_active_state( self );
+				},
+				method_name: function( ) {
+					return state.get_active_state( self ) + '_state';
+				}
+			};
 
 			// Init score
 			this._score = {
@@ -51,6 +62,8 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 			}
 
 			this.create_controls( );
+
+			this.bind_listeners( );
 
 			this.run( MS_PER_UPDATE);
 		}
@@ -84,15 +97,29 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 			this.controls_container.appendChild( pause_btn );
 		}
 
+		bind_listeners( ) {
+			var self = this;
+
+			// Listen for paddle controls
+			$( document ).keydown( function( event ) {
+				self._control_keys[ event.keyCode ] = true;
+			}).keyup( function( event ) {
+				self._control_keys[ event.keyCode ] = false;
+			});
+		}
+
 		/**************************************************
 			State methods
 		**************************************************/
 
 		play_state( ) {
-			//console.log( 'game play' );
 			var i, count;
 
-			//console.log( this._score );
+			//console.log( this._control_keys );
+
+			if ( this._control_keys[ 80 ] === true ) {
+				state.add_state( 'paused', this );
+			}
 
 			for ( i = 0, count = this._entities.length; i < count; i++ ) {
 				this._entities[ i ].update( );
@@ -102,12 +129,10 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 		}
 
 		paused_state( ) {
-			// Need to add the ability to do transitions
-			//state.addState( 'paused', this._entities[ 2 ] );
-
-			/*for ( i = 0, count = this._entities.length; i < count; i++ ) {
-				this._entities[ i ].active_state.push( 'pause' );
-			}*/
+			// Beacsue this is in the update loop is spams and toggles pause too quick. Need to control this better. Timeout? Something.
+			if ( this._control_keys[ 80 ] === true ) {
+				state.pop_state( this );
+			}
 		}
 
 		/**************************************************
@@ -115,19 +140,29 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 		**************************************************/
 
 		paused_enter( ) {
-			console.log( 'Trans: paused_enter');
+			var i, count;
+
+			for ( i = 0, count = this._entities.length; i < count; i++ ) {
+				//this._entities[ i ]._states.push( 'pause' );
+				state.add_state( 'paused', this._entities[ i ] );
+			}
 		}
 
 		paused_leave( ) {
-			console.log( 'Trans: paused_leave');
+			var i, count;
+
+			for ( i = 0, count = this._entities.length; i < count; i++ ) {
+				//this._entities[ i ]._states.push( 'pause' );
+				state.pop_state( this._entities[ i ] );
+			}
 		}
 
 		play_enter( ) {
-			console.log( 'Trans: play_enter');
+
 		}
 
 		play_leave( ) {
-			console.log( 'Trans: play_leave');
+
 		}
 
 
@@ -283,69 +318,80 @@ define( [ 'utils/utils.canvas', 'utils/utils.time', 'utils/utils.state', 'player
 		**************************************************/
 
 		run ( MS_PER_UPDATE ) {
-			this._audio.Christine.play( ).catch(function( ) {
-				console.log( 'Christine Error');
-			});
-
 			var current, elapsed, loop,
 				previous = timeUtils.timestamp( ), // 113
 				lag = 0.0,
 				fpsmeter = new FPSMeter({ decimals: 0, graph: true, theme: 'dark', left: '90%', right: '95%' }),
 				self = this;
 
+			// Play entrance sound. Not reliable. Still need to add a "mute/play sound" button from a game menu. Need a game menu first though :P
+			// Chrome has restrictions on auto-playing sounds without user input / consent.
+			this._audio.Christine.play( ).catch(function( ) {
+				console.log( 'Christine Error');
+			});
+
+			// The main game loop.
 			loop = function ( ) {
+				// Track FPS
 				fpsmeter.tickStart( );
 
-					//if ( self._state === 'play' ) {
-						current = timeUtils.timestamp( );
-						elapsed = current - previous;
-						previous = current;
-						lag += elapsed;
+					current = timeUtils.timestamp( );
+					elapsed = current - previous;
+					previous = current;
+					lag += elapsed;
 
+					// Never run update more than once per MS_PER_UPDATE ( in our case 13ms ).
+					while ( lag >= MS_PER_UPDATE ) {
+						// This is a fixed timestep update. All vector values are increase in a linear fasion. Ie. Every tick, no matter how long has
+						// passed increases the values by the same amounnt. Since we keep track of the lag, we use it in render( ) for extrapolation
+						self.update( );
+						lag -= MS_PER_UPDATE;
+					}
 
-						while ( lag >= MS_PER_UPDATE ) {
-							self.update( );
-							lag -= MS_PER_UPDATE;
-						}
+					// Render entites and pass in lag for extrapolation. This create smoother motion. It does introduce the possibilty for the extrapolation
+					// to be wrong sometime. This is typically less noticable than the constant studdery movement we get without it though. Set lag to 0 if you want
+					// to see the difference.
+					self.render( lag / MS_PER_UPDATE );
 
-						self.render( lag / MS_PER_UPDATE );
-					/*}
-					else if ( self._state === 'scored' ) {
-						console.log( 'scored' );
-					}*/
+					// The benifit of running a game loop this way is:
+					// 1) The game will run at the same speed no matter the quality of the clients machine.
+					// 2) The results are deterministic because even with lag, the number of update( ) ticks are the same, which avoids floating point calc errors.
+					// 3) If the client has a fast machine, they are not penalized by a fixed time step and can render several times between updates using extrapolation
+					//    which gives them increased FPS.
+					// 4) If the cleint has a slower machine they can skip renders (drop frames) but this give the CPU time to catch up by not being forced to render after
+					//    every update if they are behind. The danger is when the update takes consisently more than MS_PER_UPDATE (13ms) and they never catch up.
 
+				// Track FPS
 				fpsmeter.tick();
 
+				// Loop infinitely.
 				requestAnimationFrame( loop );
 			}
 
+			// Kickoff game loop. Runs once.
 			requestAnimationFrame( loop );
 		}
 
 		update( ) {
-			if ( this._states.length >= 1 ) {
+			if ( this._states.length >= 1 && typeof this[ this._states[ this._states.length - 1 ] + '_state' ] === 'function' ) {
 				// Run the method assocaited with the active_state on the top of the stack.
-				this[ this._states[ this._states.length - 1 ] + '_state' ]( );
-			}
-
-			if ( this.transitions.length >= 1 ) {
-				this[ this.transitions[ this.transitions.length - 1 ] ]( );
-				this.transitions.pop();
+				this[ this.active_state.method_name( ) ]( );
 			}
 		}
 
 		render( lag ) {
 			var i, count;
 
-			// This flag is out of date and needs updating.
-			//lag = ( this._states === 'play' ) ? lag : 0;
+			// This prevents extrapolation on all entities while the game state is paused. Will cause shuttering when game is pause and entities are not otherwise.
+			lag = ( this.active_state.name( ) === 'play' ) ? lag : 0;
 
-			//console.log( lag );
-
+			// Clear canvas befor repainting
 			this.context.clearRect( 0, 0, this._w, this._h );
 
+			// Draw scores
 			this.render_score( );
 
+			// Draw entities
 			for ( i = 0, count = this._entities.length; i < count; i++ ) {
 				this._entities[ i ].render( lag );
 			}
